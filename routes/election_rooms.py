@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from databases.election_rooms import (
     create_election_room,
+    create_paid_election_room,
     get_election_room_by_id,
     get_all_election_rooms,
     update_election_room,
@@ -16,6 +17,18 @@ router = APIRouter()
 @router.post("/", response_model=int)
 async def create_election_room_api(room: ElectionRoom):
     return create_election_room(room.dict())
+
+
+@router.post("/paid")
+async def create_paid_election_room_api(room: ElectionRoom):
+    cost = 50  # The cost to create an election room
+
+    paid_election_room_result = create_paid_election_room(room.dict(), int(cost))
+
+    if paid_election_room_result == True:
+        return paid_election_room_result
+    else:
+        raise HTTPException(status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS, detail=paid_election_room_result)
 
 
 @router.get("/{room_id}")
