@@ -14,6 +14,7 @@ def create_tables(conn):
             last_name VARCHAR(50),
             email VARCHAR(100),
             balance INTEGER,
+            username VARCHAR(100),
             password VARCHAR(100)
         )
     ''')
@@ -53,9 +54,13 @@ def create_tables(conn):
 def print_talbes():
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = cursor.fetchall()
+    cursor.execute(f"PRAGMA table_info('users')")
+    columns = cursor.fetchall()
+
+    # Extract column names
+    column_names = [col[1] for col in columns]
+
+    print(f"Columns of table 'users':")
+    print(column_names)
+
     conn.close()
-    print("Tables:")
-    for table in tables:
-        print(table[0])

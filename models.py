@@ -6,6 +6,7 @@ class User(BaseModel):
     last_name: str
     email: str
     balance: int
+    username: str
     password: str
 
 
