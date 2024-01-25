@@ -15,7 +15,7 @@ router = APIRouter()
 PROTECTED = [Depends(authentication.get_current_user)]
 
 
-@router.post("/", response_model=int, dependencies=PROTECTED)
+@router.post("/", response_model=int)
 async def create_user_api(user: User):
     return create_user(user.dict())
 
