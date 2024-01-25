@@ -1,15 +1,25 @@
-import sqlite3
+import psycopg2
 
-DATABASE_NAME = 'voting_election_db.sqlite'
+DATABASE_NAME = 'voting_election_db'
+DATABASE_USER = 'postgres'
+DATABASE_PASSWORD = '1234'
+DATABASE_HOST = 'localhost'
+DATABASE_PORT = '5432'
 
 def create_connection():
-    return sqlite3.connect(DATABASE_NAME)
+    return psycopg2.connect(
+        database=DATABASE_NAME,
+        user=DATABASE_USER,
+        password=DATABASE_PASSWORD,
+        host=DATABASE_HOST,
+        port=DATABASE_PORT
+    )
 
 def create_tables(conn):
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             first_name VARCHAR(50),
             last_name VARCHAR(50),
             email VARCHAR(100),
@@ -20,7 +30,7 @@ def create_tables(conn):
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS election_rooms (
-            id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             name VARCHAR(100),
             user_id INTEGER,
             status INTEGER,
@@ -29,7 +39,7 @@ def create_tables(conn):
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS candidates (
-            id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             name VARCHAR(100),
             about TEXT,
             election_room_id INTEGER,
@@ -38,7 +48,7 @@ def create_tables(conn):
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS votes (
-            id INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER,
             election_room_id INTEGER,
             candidate_id INTEGER,
@@ -50,15 +60,14 @@ def create_tables(conn):
     conn.commit()
     conn.close()
 
-
-def print_talbes():
+def print_tables():
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute(f"PRAGMA table_info('users')")
+    cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'")
     columns = cursor.fetchall()
 
     # Extract column names
-    column_names = [col[1] for col in columns]
+    column_names = [col[0] for col in columns]
 
     print(f"Columns of table 'users':")
     print(column_names)

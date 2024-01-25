@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from passlib.context import CryptContext
-from sqlite_database import create_connection
+from database import create_connection
 
 
 def create_user(user_data: Dict[str, Any]) -> int:
@@ -13,11 +13,12 @@ def create_user(user_data: Dict[str, Any]) -> int:
     cursor.execute(
         '''
         INSERT INTO users (first_name, last_name, email, balance, username, password)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        RETURNING id
         ''',
         (user_data['first_name'], user_data['last_name'], user_data['email'], user_data['balance'], user_data['username'], hashed_password)
     )
-    user_id = cursor.lastrowid
+    user_id = cursor.fetchone()[0]
     conn.commit()
     conn.close()
     return user_id
@@ -26,7 +27,7 @@ def create_user(user_data: Dict[str, Any]) -> int:
 def get_user_by_id(user_id: int) -> Dict[str, Any]:
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+    cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
     user = cursor.fetchone()
     conn.close()
     if user:
@@ -46,7 +47,7 @@ def get_user_by_username(username: str):
     conn = create_connection()
     cursor = conn.cursor()
 
-    cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+    cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
     user = cursor.fetchone()
     conn.close()
 
@@ -90,8 +91,8 @@ def update_user(user_id: int, updated_data: Dict[str, Any]) -> bool:
     cursor.execute(
         '''
         UPDATE users
-        SET first_name = ?, last_name = ?, email = ?, balance = ?, username = ?, password = ?
-        WHERE id = ?
+        SET first_name = %s, last_name = %s, email = %s, balance = %s, username = %s, password = %s
+        WHERE id = %s
         ''',
         (updated_data['first_name'], updated_data['last_name'], updated_data['email'], updated_data['balance'], updated_data['username'], updated_data['password'], user_id)
     )
@@ -104,7 +105,7 @@ def update_user(user_id: int, updated_data: Dict[str, Any]) -> bool:
 def delete_user(user_id: int) -> bool:
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    cursor.execute('DELETE FROM users WHERE id = %s', (user_id,))
     rows_affected = cursor.rowcount
     conn.commit()
     conn.close()

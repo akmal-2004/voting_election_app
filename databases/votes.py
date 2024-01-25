@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from sqlite_database import create_connection
+from database import create_connection
 
 
 def create_vote(vote_data: Dict[str, Any]) -> int:
@@ -8,7 +8,7 @@ def create_vote(vote_data: Dict[str, Any]) -> int:
     cursor.execute(
         '''
         INSERT INTO votes (user_id, election_room_id, candidate_id)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
         ''',
         (vote_data['user_id'], vote_data['election_room_id'], vote_data['candidate_id'])
     )
@@ -21,7 +21,7 @@ def create_vote(vote_data: Dict[str, Any]) -> int:
 def get_vote_by_id(vote_id: int) -> Dict[str, Any]:
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM votes WHERE id = ?', (vote_id,))
+    cursor.execute('SELECT * FROM votes WHERE id = %s', (vote_id,))
     vote = cursor.fetchone()
     conn.close()
     if vote:
@@ -57,8 +57,8 @@ def update_vote(vote_id: int, updated_data: Dict[str, Any]) -> bool:
     cursor.execute(
         '''
         UPDATE votes
-        SET user_id = ?, election_room_id = ?, candidate_id = ?
-        WHERE id = ?
+        SET user_id = %s, election_room_id = %s, candidate_id = %s
+        WHERE id = %s
         ''',
         (updated_data['user_id'], updated_data['election_room_id'], updated_data['candidate_id'], vote_id)
     )
@@ -71,7 +71,7 @@ def update_vote(vote_id: int, updated_data: Dict[str, Any]) -> bool:
 def delete_vote(vote_id: int) -> bool:
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM votes WHERE id = ?', (vote_id,))
+    cursor.execute('DELETE FROM votes WHERE id = %s', (vote_id,))
     rows_affected = cursor.rowcount
     conn.commit()
     conn.close()

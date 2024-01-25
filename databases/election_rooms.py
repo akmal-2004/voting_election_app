@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
-from sqlite_database import create_connection
+from database import create_connection
+import psycopg2
 
 
 def create_election_room(room_data: Dict[str, Any]) -> int:
@@ -8,7 +9,7 @@ def create_election_room(room_data: Dict[str, Any]) -> int:
     cursor.execute(
         '''
         INSERT INTO election_rooms (name, user_id, status)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
         ''',
         (room_data['name'], room_data['user_id'], room_data['status'])
     )
@@ -18,16 +19,16 @@ def create_election_room(room_data: Dict[str, Any]) -> int:
     return room_id
 
 
-def create_paid_election_room(room_data: Dict[str, Any], cost):
+def create_paid_election_room(room_data: Dict[str, Any], cost: float):
     conn = create_connection()
     cursor = conn.cursor()
 
     try:
         # Begin transaction
-        conn.execute('BEGIN TRANSACTION')
+        conn.autocommit = False
 
         # Check user's balance
-        cursor.execute('SELECT balance FROM users WHERE id = ?', (room_data['user_id'],))
+        cursor.execute('SELECT balance FROM users WHERE id = %s', (room_data['user_id'],))
         user_balance = cursor.fetchone()[0]
         
         # Check if user has enough balance to cover the cost
@@ -35,22 +36,23 @@ def create_paid_election_room(room_data: Dict[str, Any], cost):
             raise ValueError("Insufficient balance to create an election room")
 
         # Deduct cost from user's balance
-        cursor.execute('UPDATE users SET balance = balance - ? WHERE id = ?', (cost, room_data['user_id']))
+        cursor.execute('UPDATE users SET balance = balance - %s WHERE id = %s', (cost, room_data['user_id']))
 
         # Create election room if deduction is successful
-        cursor.execute('INSERT INTO election_rooms (name, user_id, status) VALUES (?, ?, ?)', (room_data['name'], room_data['user_id'], room_data['status']))
+        cursor.execute('INSERT INTO election_rooms (name, user_id, status) VALUES (%s, %s, %s)', (room_data['name'], room_data['user_id'], room_data['status']))
 
         # Commit transaction if everything is successful
         conn.commit()
         result = True
 
-    except Exception as e:
+    except psycopg2.Error as e:
         # Rollback on failure
         conn.rollback()
         result = f"Failed to create paid election room: {e}"
 
     finally:
-        # Close connection
+        # Reset autocommit and close connection
+        conn.autocommit = True
         conn.close()
         return result
 
@@ -58,7 +60,7 @@ def create_paid_election_room(room_data: Dict[str, Any], cost):
 def get_election_room_by_id(room_id: int) -> Dict[str, Any]:
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM election_rooms WHERE id = ?', (room_id,))
+    cursor.execute('SELECT * FROM election_rooms WHERE id = %s', (room_id,))
     room = cursor.fetchone()
     conn.close()
     if room:
@@ -94,8 +96,8 @@ def update_election_room(room_id: int, updated_data: Dict[str, Any]) -> bool:
     cursor.execute(
         '''
         UPDATE election_rooms
-        SET name = ?, user_id = ?, status = ?
-        WHERE id = ?
+        SET name = %s, user_id = %s, status = %s
+        WHERE id = %s
         ''',
         (updated_data['name'], updated_data['user_id'], updated_data['status'], room_id)
     )
@@ -108,7 +110,7 @@ def update_election_room(room_id: int, updated_data: Dict[str, Any]) -> bool:
 def delete_election_room(room_id: int) -> bool:
     conn = create_connection()
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM election_rooms WHERE id = ?', (room_id,))
+    cursor.execute('DELETE FROM election_rooms WHERE id = %s', (room_id,))
     rows_affected = cursor.rowcount
     conn.commit()
     conn.close()

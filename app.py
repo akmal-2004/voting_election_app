@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from models import User, ElectionRoom
-from sqlite_database import create_connection, create_tables
+from database import create_connection, create_tables
 from routes.users import router as users_router
 from routes.election_rooms import router as election_rooms_router
 from routes.candidates import router as candidates_router
